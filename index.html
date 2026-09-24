@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>公眾資訊整合儀表板</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css?v=20260825_3">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <!-- Background decorative blur elements -->
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="app-logo">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>資訊整合儀表板</span>
+                </div>
+            </div>
+
+            <!-- Stats Mini Panel -->
+            <div class="sidebar-stats">
+                <div class="stat-box">
+                    <span class="stat-val" id="total-sources-count">0</span>
+                    <span class="stat-lbl">資訊來源</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-val" id="total-announcements-count">0</span>
+                    <span class="stat-lbl">公告總數</span>
+                </div>
+            </div>
+
+            <!-- Special Summary Button -->
+            <div class="summary-menu-item" id="btn-today-summary">
+                <i data-lucide="calendar-days"></i>
+                <span>📅 當日公告匯總</span>
+            </div>
+
+            <!-- Sync Data Action Button -->
+            <button class="btn btn-secondary btn-refresh-data" id="btn-refresh-data" style="margin-bottom: 12px; width: 100%;">
+                <i data-lucide="refresh-cw"></i>
+                <span>🔄 更新資料</span>
+            </button>
+
+            <!-- Action Button -->
+            <button class="btn btn-primary btn-add-source" id="btn-open-add-source-modal">
+                <i data-lucide="plus-circle"></i>
+                <span>新增資訊來源</span>
+            </button>
+
+            <!-- Search Sources -->
+            <div class="search-sources-wrapper">
+                <i data-lucide="search" class="search-icon"></i>
+                <input type="text" id="search-sources-input" placeholder="搜尋資訊源...">
+            </div>
+
+            <!-- Scrollable source menu list -->
+            <div class="source-list-container">
+                <div class="source-section-title" id="preset-section-title">預設來源</div>
+                <ul class="source-list" id="preset-sources-list">
+                    <!-- Dynamic rendering -->
+                </ul>
+
+                <div class="source-section-title" id="custom-section-title" style="display: none;">自定義來源</div>
+                <ul class="source-list" id="custom-sources-list">
+                    <!-- Dynamic rendering -->
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Top Dashboard Header -->
+            <header class="content-header">
+                <div class="header-info">
+                    <div class="header-title-row">
+                        <h1 id="current-source-title">載入中...</h1>
+                        <span class="source-badge" id="current-source-badge">預設</span>
+                    </div>
+                    <p class="source-url-text" id="current-source-url-wrapper">
+                        <i data-lucide="link"></i>
+                        <a href="#" id="current-source-url" target="_blank">官網連結</a>
+                    </p>
+                </div>
+                
+                <div class="header-actions">
+                    <button class="btn btn-secondary" id="btn-open-add-announcement-modal">
+                        <i data-lucide="plus"></i>
+                        <span>新增此來源公告</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Tabs Navigation -->
+            <div class="tabs-container" id="tabs-navigation-bar" style="display: none;">
+                <button class="tab-btn active" data-tab="announcements">
+                    <i data-lucide="bell"></i>
+                    <span>最新公告</span>
+                </button>
+                <button class="tab-btn" data-tab="activities">
+                    <i data-lucide="calendar"></i>
+                    <span>公民會館活動</span>
+                </button>
+            </div>
+
+            <!-- Content Controls (Filters / Search) -->
+            <section class="content-controls">
+                <div class="search-box" id="search-box-wrapper">
+                    <i data-lucide="search" class="control-search-icon"></i>
+                    <input type="text" id="announcement-search" placeholder="搜尋標題、內容或老師...">
+                </div>
+
+                <div class="filters-row" id="filters-row-area">
+                    <!-- Date Filters for general announcements -->
+                    <div class="filter-group" id="date-filter-group">
+                        <label for="filter-date-start" id="lbl-date-start">日期範圍:</label>
+                        <input type="date" id="filter-date-start">
+                        <span id="date-range-separator">至</span>
+                        <input type="date" id="filter-date-end">
+                    </div>
+
+                    <!-- Custom filters for Citizen Hall Activities -->
+                    <div class="filter-group" id="activity-filters-group" style="display: none;">
+                        <select id="filter-hall-select">
+                            <option value="">所有館別</option>
+                            <!-- Dynamic rendering -->
+                        </select>
+                        <select id="filter-price-select">
+                            <option value="">所有費用</option>
+                            <option value="free">免費活動</option>
+                            <option value="paid">付費活動</option>
+                        </select>
+                        <select id="sort-activity-select">
+                            <option value="id-asc">預設排序</option>
+                            <option value="price-asc">費用: 低到高</option>
+                            <option value="price-desc">費用: 高到低</option>
+                            <option value="enroll-desc">報名率: 高到低</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-icon-only" id="btn-clear-filters" title="清除篩選條件">
+                        <i data-lucide="rotate-ccw"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Main Render Area -->
+            <section class="render-viewport">
+                <!-- announcements view -->
+                <div class="tab-content-panel active" id="panel-announcements">
+                    <div class="announcements-grid" id="announcements-container">
+                        <!-- Dynamic items -->
+                    </div>
+                </div>
+
+                <!-- activities view -->
+                <div class="tab-content-panel" id="panel-activities">
+                    <div class="activities-grid" id="activities-container">
+                        <!-- Dynamic items -->
+                    </div>
+                </div>
+
+                <!-- today summary view -->
+                <div class="tab-content-panel" id="panel-today-summary">
+                    <div class="today-summary-container" id="today-summary-container">
+                        <!-- Dynamic grouped items -->
+                    </div>
+                </div>
+
+                <!-- Pagination footer -->
+                <div class="pagination-footer" id="pagination-container">
+                    <button class="btn btn-pagination" id="btn-prev-page">
+                        <i data-lucide="chevron-left"></i>
+                        <span>上一頁</span>
+                    </button>
+                    <span class="pagination-info" id="pagination-info-text">第 1 頁 / 共 1 頁</span>
+                    <button class="btn btn-pagination" id="btn-next-page">
+                        <span>下一頁</span>
+                        <i data-lucide="chevron-right"></i>
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal: Add Source -->
+    <div class="modal-backdrop" id="add-source-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>新增自定義資訊來源</h3>
+                <button class="btn-close-modal" id="btn-close-source-modal">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="add-source-form">
+                <div class="form-body">
+                    <div class="form-group">
+                        <label for="source-name">機構名稱 <span class="required">*</span></label>
+                        <input type="text" id="source-name" placeholder="例如：新北市立圖書館" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="source-url">官方網址</label>
+                        <input type="url" id="source-url" placeholder="https://example.gov.taipei/">
+                    </div>
+                </div>
+                <div class="form-footer">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-source-modal">取消</button>
+                    <button type="submit" class="btn btn-primary">確認新增</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Edit Source -->
+    <div class="modal-backdrop" id="edit-source-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>編輯資訊來源</h3>
+                <button class="btn-close-modal" id="btn-close-edit-source-modal">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="edit-source-form">
+                <input type="hidden" id="edit-source-old-name">
+                <div class="form-body">
+                    <div class="form-group">
+                        <label for="edit-source-name">機構名稱 <span class="required">*</span></label>
+                        <input type="text" id="edit-source-name" placeholder="例如：北市圖" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-source-url">官方網址</label>
+                        <input type="url" id="edit-source-url" placeholder="https://example.gov.taipei/">
+                    </div>
+                </div>
+                <div class="form-footer">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-edit-source-modal">取消</button>
+                    <button type="submit" class="btn btn-primary">儲存修改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Add Announcement -->
+    <div class="modal-backdrop" id="add-announcement-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>新增公告項目</h3>
+                <button class="btn-close-modal" id="btn-close-announcement-modal">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="add-announcement-form">
+                <div class="form-body">
+                    <div class="form-group">
+                        <label>發布來源</label>
+                        <input type="text" id="announcement-source-display" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="announcement-title">公告標題 <span class="required">*</span></label>
+                        <textarea id="announcement-title" rows="3" placeholder="請輸入公告內容或活動標題..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="announcement-date">發布日期 <span class="required">*</span></label>
+                        <input type="date" id="announcement-date" required>
+                    </div>
+                </div>
+                <div class="form-footer">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-announcement-modal">取消</button>
+                    <button type="submit" class="btn btn-primary">確認新增</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Script -->
+    <script src="app.js?v=20260825_4"></script>
+</body>
+</html>

@@ -524,6 +524,19 @@ function refreshExcelData() {
         document.head.appendChild(style);
     }
     
+    // Check if running on GitHub Pages or static host without Python backend
+    const isStaticHost = window.location.hostname.includes('github.io') || window.location.hostname.includes('vercel.app') || window.location.hostname.includes('netlify.app');
+    
+    if (isStaticHost) {
+        fetchData(() => {
+            alert("靜態展示模式：已成功重新載入最新資料 (data.json)！\n（提示：即時爬蟲解析需於本機執行 python parse_data.py 並將 updated data.json 上傳）");
+        });
+        DOM.btnRefreshData.disabled = false;
+        DOM.btnRefreshData.innerHTML = origBtnHTML;
+        lucide.createIcons();
+        return;
+    }
+    
     fetch('/api/refresh', {
         method: 'POST',
         headers: {
@@ -531,8 +544,9 @@ function refreshExcelData() {
         }
     })
     .then(response => {
-        if (!response.ok) {
-            return response.json().then(json => { throw new Error(json.message || "伺服器錯誤"); });
+        const contentType = response.headers.get("content-type");
+        if (!response.ok || !contentType || !contentType.includes("application/json")) {
+            throw new Error("無後端 API 服務 (HTTP " + response.status + ")");
         }
         return response.json();
     })
@@ -543,8 +557,10 @@ function refreshExcelData() {
         });
     })
     .catch(err => {
-        console.error("Failed to update excel data:", err);
-        alert("資料同步失敗！\n錯誤原因: " + err.message);
+        console.warn("Failed to update via backend API, fallback to fetchData:", err);
+        fetchData(() => {
+            alert("靜態展示模式：已重新載入最新 data.json 資料！");
+        });
     })
     .finally(() => {
         // Restore button state

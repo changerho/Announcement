@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+
+# Local environment / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+service-account.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local scratch / generated diagnostics
+scratch_*.json
+_webdata_utf8.txt
+
+# Logs
+*.log

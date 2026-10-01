@@ -6,6 +6,8 @@ import importlib
 import parse_data
 
 PORT = 8000
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+os.chdir(BASE_DIR)
 
 class DashboardRequestHandler(SimpleHTTPRequestHandler):
     def do_POST(self):

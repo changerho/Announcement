@@ -1,18 +1,16 @@
-import pandas as pd
 import json
 import os
 import re
 import datetime
-import subprocess
 import urllib.request
 import http.cookiejar
 import ssl
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
 
-txt_path = r"D:\AI Test\Web Data.txt"
-excel_path = r"D:\AI Test\Web Data.xlsm"
-output_path = r"D:\AI Test\data.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+txt_path = os.path.join(BASE_DIR, "Web Data.txt")
+output_path = os.path.join(BASE_DIR, "data.json")
 
 context = ssl._create_unverified_context()
 headers = {
@@ -42,16 +40,16 @@ DEFAULT_ANNOUNCEMENTS = {
         {"title": "公告桃園市政府代為標售115年度第1批祭祀公業土地", "date": "2026-08-28"}
     ],
     "桃園近期活動": [
+        {"title": "從日本知名觀光地標「牛久大佛」緣分開啟台日觀光交流新篇章", "date": "2026-09-29"},
+        {"title": "【慶祝龍潭轉運站啟用｜搭桃小巴遊大龍門】店家優惠", "date": "2026-09-24"},
+        {"title": "【停機公告】因機房機房設備更新作業，網站相關服務自10月02日(五)下午7時至11時暫停", "date": "2026-09-24"},
+        {"title": "桃園智慧觀光成績亮眼 數位服務再升級", "date": "2026-09-23"},
+        {"title": "台灣設計展-觀光館玩美流震撼五感，葛萊美大師蕭青陽操刀！", "date": "2026-09-22"},
+        {"title": "國旅補助桃園加碼雙重抽！百萬好禮、千萬現金邀全台住桃園", "date": "2026-09-18"},
+        {"title": "秋遊珍珠海岸體驗再升級  探索桃園濱海旅遊新魅力", "date": "2026-09-18"},
+        {"title": "桃園市民限定優惠！遊日本名取市送500日圓消費金", "date": "2026-09-17"},
         {"title": "台灣好行暢遊大龍門 藍色公路水庫登島遊 石門活魚嚐鱻味", "date": "2026-09-11"},
-        {"title": "北橫「星」勢力進軍新加坡　「北橫與星共舞」推廣山林旅遊魅力 13條「探索北橫」主題遊程預計10月後推出　串聯星空、神木、農遊及泰雅文化拓展星馬市場", "date": "2026-09-08"},
-        {"title": "機場出發直達精彩！桃園攜手馬來西亞簽署MOU，開啟台馬觀光新榮景", "date": "2026-09-07"},
-        {"title": "違反發展觀光條例經裁罰之非法旅宿名單至115年8月31日止", "date": "2026-09-07"},
-        {"title": "「桃園GO」優惠對象再加碼　12條主題遊程瘋桃園", "date": "2026-09-03"},
-        {"title": "桃園揪你溫馨過九三  軍人節觀光專屬優惠一次看", "date": "2026-09-02"},
-        {"title": "桃園童心點亮日本東北！小學生彩繪燈籠飄揚名取市", "date": "2026-08-28"},
-        {"title": "⚠️羅浮溫泉湯8/24(一)暫停開放", "date": "2026-08-24"},
-        {"title": "📢8/23宇內溪戲水區水流湍急暫停開放", "date": "2026-08-23"},
-        {"title": "開放特色老屋申設民宿！「桃園舊城再生」再添新亮點", "date": "2026-08-19"}
+        {"title": "北橫「星」勢力進軍新加坡　「北橫與星共舞」推廣山林旅遊魅力 13條「探索北橫」主題遊程預計10月後推出　串聯星空、神木、農遊及泰雅文化拓展星馬市場", "date": "2026-09-08"}
     ],
     "兒童新樂園": [
         {"title": "兒童新樂園部分遊具停止營運公告", "date": "2026-09-02"},
@@ -108,8 +106,9 @@ DEFAULT_ANNOUNCEMENTS = {
         {"title": "樹林地政邀您來三峽解鎖你的秘密基地！", "date": "2026-08-28"}
     ],
     "悠遊卡活動": [
-        {"title": "日韓巨星來台再掀「悠遊卡熱潮」", "date": "2026-09-08"},
-        {"title": "國立大學數位轉型領航 北護大繳費機全面導入悠遊付TWQR 校務規費掃碼一機搞定", "date": "2026-09-08"},
+        {"title": "「日常採買」優惠登場 悠遊付最高10%回饋金", "date": "2026-09-23"},
+        {"title": "日韓巨星來台再掀「悠遊卡熱潮」從支付神卡變身最夯台味伴手禮", "date": "2026-09-08"},
+        {"title": "國立大學數位轉型領航 北護大繳費機全面導入悠遊付TWQR 校務規費掃碼一機搞定", "date": "2026-09-02"},
         {"title": "赴韓旅遊必備悠遊付 9/1起每筆最高送12%回饋", "date": "2026-09-01"},
         {"title": "爸媽省錢神器！繳納學雜費悠遊付神助攻 最高賺10% 綁玉山信用卡滿額享3期0利率", "date": "2026-08-31"},
         {"title": "8/31起！鮮奶福利擴大至國中生 悠遊卡學生證助攻 逾100萬學童免費喝鮮奶", "date": "2026-08-28"},
@@ -358,15 +357,26 @@ def scrape_live_announcements(name, url):
 
             # Targeted parser for EasyCard 悠遊卡活動
             elif 'easycard.com.tw' in url or name == '悠遊卡活動':
-                easycard_news = [
-                    {"title": "日韓巨星來台再掀「悠遊卡熱潮」", "date": "2026-09-08"},
-                    {"title": "國立大學數位轉型領航 北護大繳費機全面導入悠遊付TWQR 校務規費掃碼一機搞定", "date": "2026-09-08"},
-                    {"title": "赴韓旅遊必備悠遊付 9/1起每筆最高送12%回饋", "date": "2026-09-01"},
-                    {"title": "爸媽省錢神器！繳納學雜費悠遊付神助攻 最高賺10% 綁玉山信用卡滿額享3期0利率", "date": "2026-08-31"},
-                    {"title": "8/31起！鮮奶福利擴大至國中生 悠遊卡學生證助攻 逾100萬學童免費喝鮮奶", "date": "2026-08-28"},
-                    {"title": "嗶！1秒即領敬老禮金 悠遊卡攜手15大通路 9/1起買一送一等好康登場", "date": "2026-08-26"}
-                ]
-                items.extend(easycard_news)
+                try:
+                    req_ec = urllib.request.Request('https://www.easycard.com.tw/news?page=1&cls=1', headers=headers)
+                    with urllib.request.urlopen(req_ec, context=context, timeout=8) as resp_ec:
+                        html_ec = resp_ec.read().decode('utf-8', errors='ignore')
+                        soup_ec = BeautifulSoup(html_ec, 'html.parser')
+                        for a in soup_ec.find_all('a', href=True):
+                            href = a['href']
+                            if 'new?cls=' in href or 'id=' in href:
+                                raw_text = a.get_text().strip()
+                                raw_text = re.sub(r'\s+', ' ', raw_text)
+                                date_match = re.search(r'(\d{4}[-/.]\d{1,2}[-/.]\d{1,2})', raw_text)
+                                if date_match:
+                                    date_str = date_match.group(1)
+                                    title = re.sub(r'^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}\s*', '', raw_text).strip()
+                                    if len(title) > 5 and not any(it['title'] == title for it in items):
+                                        items.append({"title": title, "date": date_str})
+                                        if len(items) >= 10:
+                                            break
+                except Exception as e:
+                    print(f"[{name}] Live scrape error: {e}")
 
             # Targeted parser for Civil Affairs Bureau 台北市民政局
             elif 'ca.gov.taipei' in url or name == '台北市民政局':
@@ -527,7 +537,7 @@ def main():
 
     # Guaranteed non-empty fallback dataset for all institutions
     for name in institutions_list:
-        if not announcements[name] or name == "桃園近期活動":
+        if not announcements[name]:
             announcements[name] = DEFAULT_ANNOUNCEMENTS.get(name, [
                 {"title": f"【公告】{name} 最新資訊內容發布", "date": today_str}
             ])
@@ -555,54 +565,6 @@ def main():
         json.dump(dashboard_data, f, ensure_ascii=False, indent=2)
         
     print("Full audit and update for all institutions complete!")
-    push_to_github()
-
-def push_to_github():
-    print("\n--- 自動 Git 推送至 GitHub Pages ---")
-    import shutil
-    
-    # Locate git executable on Windows/Linux
-    git_cmd = shutil.which("git")
-    if not git_cmd:
-        possible_paths = [
-            r"C:\Program Files\Git\cmd\git.exe",
-            r"C:\Program Files\Git\bin\git.exe",
-            r"C:\Program Files (x86)\Git\cmd\git.exe",
-            os.path.expanduser(r"~\AppData\Local\Programs\Git\cmd\git.exe")
-        ]
-        for p in possible_paths:
-            if os.path.exists(p):
-                git_cmd = p
-                break
-
-    if not git_cmd:
-        print("[提示] 未檢測到 Git 工具！請下載並安裝 Git for Windows (https://git-scm.com/download/win)")
-        print("       安裝時請勾選 'Add Git to PATH'，即可開啟全自動 GitHub Pages 推送功能。")
-        return
-
-    now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    commit_msg = f"Auto update data.json ({now_str})"
-    repo_dir = os.path.dirname(os.path.abspath(__file__))
-    use_shell = os.name == 'nt'
-    
-    try:
-        # 1. git add data.json
-        subprocess.run([git_cmd, "add", "data.json"], check=True, cwd=repo_dir, shell=use_shell)
-        
-        # 2. git commit
-        res = subprocess.run([git_cmd, "commit", "-m", commit_msg], cwd=repo_dir, capture_output=True, text=True, shell=use_shell)
-        if "nothing to commit" in res.stdout or "nothing added to commit" in res.stdout:
-            print("data.json 資料無變更，無需 Commit。")
-            return
-            
-        # 3. git push origin main
-        print(f"正在將 Commit '{commit_msg}' 推送到 GitHub Pages (main 分支)...")
-        subprocess.run([git_cmd, "push", "origin", "main"], check=True, cwd=repo_dir, shell=use_shell)
-        print("[成功] 成功將 updated data.json 自動推送到 GitHub！GitHub Pages 將在 30 秒至 1 分鐘內完成網站更新。")
-    except FileNotFoundError:
-        print("[提示] [WinError 2] 系統找不到 Git 程式。請安裝 Git (https://git-scm.com/) 並將其加入 PATH 環境變數。")
-    except Exception as e:
-        print(f"[提示] 自動 Git 推送訊息: {e}")
 
 if __name__ == "__main__":
     main()
